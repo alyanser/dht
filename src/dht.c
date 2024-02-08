@@ -274,7 +274,7 @@ struct peer * dht_responsible(dht_id id) {
 		return &successor;
 	}
 
-	if(predecessor.id < 18000 || predecessor.id > 19000) {
+	if(predecessor.id != 18648) {
 		if(is_responsible(predecessor.id, self.id, id)) {
 			return &self;
 		}

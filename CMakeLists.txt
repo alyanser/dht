@@ -4,7 +4,6 @@ project(RN-Praxis)
 
 set(CMAKE_C_STANDARD 11)
 
-find_package(OpenSSL REQUIRED)
 
 add_executable(webserver
 	src/webserver.c
@@ -14,10 +13,12 @@ add_executable(webserver
 	src/dht.c
 )
 
+
 target_include_directories(webserver PRIVATE "include")
 
-target_compile_options(webserver PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(webserver PRIVATE -Wall -Wextra -Wpedantic -Wno-infinite-recursion)
 
+find_package(OpenSSL REQUIRED)
 target_link_libraries(webserver PRIVATE ${OPENSSL_LIBRARIES} -lm)
 
 find_package(Threads REQUIRED)
