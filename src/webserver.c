@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <openssl/sha.h>
 
 #include "data.h"
@@ -398,6 +399,12 @@ int main(int argc, char ** argv) {
 	};
 
 	struct connection_state state = {0};
+
+	if(!getenv("NO_STABILIZE")) {
+		pthread_t t;
+		pthread_create(&t, NULL, &send_stabilize, NULL);
+		pthread_detach(t);
+	}
 
 	while(true) {
 		// Use poll() to wait for events on the monitored sockets.

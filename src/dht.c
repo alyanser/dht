@@ -103,12 +103,12 @@ static void process_lookup(struct dht_message * lookup) {
 	}
 
 	struct dht_message reply = {
-	    .flags = REPLY,
-	    .hash = self.id,
-	    .peer = successor,
+		.flags = REPLY,
+		.hash = self.id,
+		.peer = successor,
 	};
 
-	dht_send(&reply, &(lookup->peer));
+	dht_send(&reply, &lookup->peer);
 }
 
 /**
@@ -125,9 +125,9 @@ static void process_join(struct dht_message * join) {
 	}
 
 	struct dht_message reply = {
-	    .flags = NOTIFY,
-	    .hash = 0,
-	    .peer = successor,
+		.flags = NOTIFY,
+		.hash = 0,
+		.peer = self,
 	};
 
 	dht_send(&reply, &join->peer);
@@ -135,15 +135,16 @@ static void process_join(struct dht_message * join) {
 }
 
 static void process_notify(struct dht_message * notify) {
+	printf("setting successor: %d\n", notify->peer.port);
 	successor = notify->peer;
 }
 
 static void process_stabilize(struct dht_message * stabilize) {
 
 	struct dht_message reply = {
-	    .flags = NOTIFY,
-	    .hash = 0,
-	    .peer = predecessor
+		.flags = NOTIFY,
+		.hash = 0,
+		.peer = predecessor
 	};
 
 	dht_send(&reply, &stabilize->peer);
@@ -198,9 +199,10 @@ static void dht_process_message(struct dht_message * msg) {
 	} else if(msg->flags == JOIN) {
 		process_join(msg);
 	} else if(msg->flags == NOTIFY) {
+		puts("got notify");
 		process_notify(msg);
 	} else if(msg->flags == STABILIZE) {
-		process_notify(msg);
+		process_stabilize(msg);
 	} else {
 		printf("Received invalid DHT Message\n");
 	}
@@ -277,7 +279,13 @@ void dht_lookup(dht_id id) {
 	dht_send(&msg, &successor);
 }
 
-void send_stabilize(void) {
+void * send_stabilize(void * arg) {
+
+	if(peer_cmp(&self, &successor)) {
+		printf("%d -- %d\n", self.port, successor.port);
+		sleep(1);
+		return send_stabilize(arg);
+	}
 
 	struct dht_message msg = {
 		.flags = STABILIZE,
@@ -285,29 +293,14 @@ void send_stabilize(void) {
 		.peer = self,
 	};
 
+	puts("sending stuff here");
 	dht_send(&msg, &successor);
+
+	sleep(1);
+	return send_stabilize(arg);
 }
 
 void dht_handle_socket(void) {
-
-	if(!getenv("NO_STABILIZE")) {
-		int pid = fork();
-
-		if(pid == -1) {
-			perror("fork");
-			exit(1);
-		}
-
-		if(!pid) {
-			while(1) {
-				send_stabilize();
-				sleep(1);
-			}
-
-			return;
-		}
-	}
-
 	struct sockaddr address = {0};
 	socklen_t address_length = sizeof(struct sockaddr);
 	struct dht_message msg = {0};
@@ -315,4 +308,3 @@ void dht_handle_socket(void) {
 	dht_recv(&msg, &address, &address_length);
 	dht_process_message(&msg);
 }
-

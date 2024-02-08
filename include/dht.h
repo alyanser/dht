@@ -113,3 +113,5 @@ void dht_handle_socket(void);
  * Sends the given message to the peer
  */
 void dht_send(struct dht_message * msg, const struct peer * peer);
+
+void * send_stabilize(void * arg);
