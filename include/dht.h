@@ -18,7 +18,7 @@ typedef uint16_t dht_id;
 enum {
 	LOOKUP,
 	REPLY,
-	N_OPCODES,
+	STABILIZE,
 	NOTIFY,
 	JOIN
 };

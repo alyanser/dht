@@ -9,6 +9,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <time.h>
@@ -128,13 +130,25 @@ static void process_join(struct dht_message * join) {
 	    .peer = successor,
 	};
 
-	dht_send(&reply, &(join->peer));
+	dht_send(&reply, &join->peer);
 	predecessor = join->peer;
 }
 
 static void process_notify(struct dht_message * notify) {
 	successor = notify->peer;
 }
+
+static void process_stabilize(struct dht_message * stabilize) {
+
+	struct dht_message reply = {
+	    .flags = NOTIFY,
+	    .hash = 0,
+	    .peer = predecessor
+	};
+
+	dht_send(&reply, &stabilize->peer);
+}
+
 
 /**
 * Process the given reply
@@ -184,6 +198,8 @@ static void dht_process_message(struct dht_message * msg) {
 	} else if(msg->flags == JOIN) {
 		process_join(msg);
 	} else if(msg->flags == NOTIFY) {
+		process_notify(msg);
+	} else if(msg->flags == STABILIZE) {
 		process_notify(msg);
 	} else {
 		printf("Received invalid DHT Message\n");
@@ -251,15 +267,47 @@ void peer_to_sockaddr(const struct peer * peer, struct sockaddr_in * addr) {
 }
 
 void dht_lookup(dht_id id) {
+
 	struct dht_message msg = {
 	    .flags = LOOKUP,
 	    .hash = id,
 	    .peer = self,
 	};
+
+	dht_send(&msg, &successor);
+}
+
+void send_stabilize(void) {
+
+	struct dht_message msg = {
+		.flags = STABILIZE,
+		.hash = self.id,
+		.peer = self,
+	};
+
 	dht_send(&msg, &successor);
 }
 
 void dht_handle_socket(void) {
+
+	if(!getenv("NO_STABILIZE")) {
+		int pid = fork();
+
+		if(pid == -1) {
+			perror("fork");
+			exit(1);
+		}
+
+		if(!pid) {
+			while(1) {
+				send_stabilize();
+				sleep(1);
+			}
+
+			return;
+		}
+	}
+
 	struct sockaddr address = {0};
 	socklen_t address_length = sizeof(struct sockaddr);
 	struct dht_message msg = {0};
@@ -267,3 +315,4 @@ void dht_handle_socket(void) {
 	dht_recv(&msg, &address, &address_length);
 	dht_process_message(&msg);
 }
+
