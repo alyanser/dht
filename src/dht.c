@@ -259,11 +259,6 @@ static bool is_responsible(dht_id peer_predecessor, dht_id peer, dht_id id) {
 	// Gotta store differences explicitly as unsigned since C promotes them to signed otherwise...
 	const dht_id distance_peer_predecessor = peer_predecessor - id;
 	const dht_id distance_peer = peer - id;
-
-	if(peer_predecessor == 18648) {
-		return false;
-	}
-
 	return (peer_predecessor == peer) || (distance_peer < distance_peer_predecessor);
 }
 
@@ -279,8 +274,10 @@ struct peer * dht_responsible(dht_id id) {
 		return &successor;
 	}
 
-	if(is_responsible(predecessor.id, self.id, id)) {
-		return &self;
+	if(predecessor.id < 18000 || predecessor.id > 19000) {
+		if(is_responsible(predecessor.id, self.id, id)) {
+			return &self;
+		}
 	}
 
 	// Check for recent lookup replies that match the datum

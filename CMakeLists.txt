@@ -20,6 +20,9 @@ target_compile_options(webserver PRIVATE -Wall -Wextra -Wpedantic)
 
 target_link_libraries(webserver PRIVATE ${OPENSSL_LIBRARIES} -lm)
 
+find_package(Threads REQUIRED)
+target_link_libraries(webserver PRIVATE Threads::Threads)
+
 # Packaging
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
