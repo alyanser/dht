@@ -29,7 +29,6 @@ struct tuple resources[MAX_RESOURCES] = {{"/static/foo", "Foo", sizeof "Foo" - 1
  * @param request   A pointer to the struct containing the parsed request information.
  */
 void send_reply(int conn, struct request * request) {
-
 	// Create a buffer to hold the HTTP reply
 	char buffer[HTTP_MAX_SIZE];
 	char * reply = buffer;
@@ -181,6 +180,7 @@ bool handle_connection(struct connection_state * state) {
 
 	// Check if an error occurred while receiving data from the socket
 	ssize_t bytes_read = recv(state->sock, state->end, buffer_end - state->end, 0);
+
 	if(bytes_read == -1) {
 		perror("recv");
 		close(state->sock);
@@ -193,6 +193,7 @@ bool handle_connection(struct connection_state * state) {
 	char * window_end = state->end + bytes_read;
 
 	ssize_t bytes_processed = 0;
+
 	while((bytes_processed = process_packet(state->sock, window_start, window_end - window_start)) > 0) {
 		window_start += bytes_processed;
 	}
@@ -246,6 +247,7 @@ static int setup_server_socket(struct sockaddr_in addr) {
 
 	// Create a socket
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
+
 	if(sock == -1) {
 		perror("socket");
 		exit(EXIT_FAILURE);
@@ -289,6 +291,7 @@ static int setup_server_socket(struct sockaddr_in addr) {
 static int setup_peer_socket(struct sockaddr_in addr) {
 	// Create a socket
 	int sock = socket(AF_INET, SOCK_DGRAM, 0);
+
 	if(sock == -1) {
 		perror("socket");
 		exit(EXIT_FAILURE);
@@ -320,9 +323,9 @@ static struct peer peer_from_args(const string id, const string ip, const string
 
 	// Create a struct peer object to hold peer information
 	struct peer result = {
-	    .id = safe_strtoul(id, NULL, 10, "Failed to parse peer ID"),
-	    .ip = {.s_addr = ntohl(addr.sin_addr.s_addr)},
-	    .port = ntohs(addr.sin_port),
+		.id = safe_strtoul(id, NULL, 10, "Failed to parse peer ID"),
+		.ip = {.s_addr = ntohl(addr.sin_addr.s_addr)},
+		.port = ntohs(addr.sin_port),
 	};
 
 	// Return the created peer struct
@@ -339,10 +342,14 @@ static struct peer peer_from_args(const string id, const string ip, const string
 *  ./build/webserver self.ip self.port self.id anchor.ip anchor.port
 */
 int main(int argc, char ** argv) {
+
 	if(argc != 3 && argc != 4 && argc != 6) {
+		fprintf(stderr, "Usage: %s [self.ip] [self.port] [self.id]* [anchor.ip]* [anchor.port]*\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+
 	const string id_arg = (argc > 3) ? argv[3] : "0";
+
 	self = peer_from_args(id_arg, argv[1], argv[2]);
 
 	struct sockaddr_in addr;
@@ -350,10 +357,12 @@ int main(int argc, char ** argv) {
 
 	// Set up a server socket and a DHT socket.
 	int server_socket = setup_server_socket(addr);
+
 	dht_socket = setup_peer_socket(addr);
 
 	// Check if the program is running in static mode or join mode.
-	const bool static_mode = getenv("PRED_ID") && getenv("PRED_IP") && getenv("PRED_PORT") && getenv("SUCC_ID") && getenv("SUCC_IP") && getenv("SUCC_PORT");
+	const bool static_mode = getenv("PRED_ID") && getenv("PRED_IP") && getenv("PRED_PORT")
+		&& getenv("SUCC_ID") && getenv("SUCC_IP") && getenv("SUCC_PORT");
 
 	if(static_mode) {
 		// If running in static mode, use the provided predecessor and successor information.
@@ -367,15 +376,16 @@ int main(int argc, char ** argv) {
 
 	// Create an array of pollfd structures to monitor sockets.
 	struct pollfd sockets[3] = {
-	    {.fd = server_socket, .events = POLLIN},
-	    {.fd = dht_socket, .events = POLLIN},
+		{.fd = server_socket, .events = POLLIN},
+		{.fd = dht_socket, .events = POLLIN},
 	};
 
 	struct connection_state state = {0};
-	while(true) {
 
+	while(true) {
 		// Use poll() to wait for events on the monitored sockets.
 		int ready = poll(sockets, sizeof(sockets) / sizeof(sockets[0]), -1);
+
 		if(ready == -1) {
 			perror("poll");
 			exit(EXIT_FAILURE);
@@ -383,23 +393,24 @@ int main(int argc, char ** argv) {
 
 		// Process events on the monitored sockets.
 		for(size_t i = 0; i < sizeof(sockets) / sizeof(sockets[0]); i += 1) {
+
 			if(sockets[i].revents != POLLIN) {
 				// If there are no POLLIN events on the socket, continue to the next iteration.
 				continue;
 			}
+
 			int s = sockets[i].fd;
 
 			if(s == server_socket) {
-
 				// If the event is on the server_socket, accept a new connection from a client.
 				int connection = accept(server_socket, NULL, NULL);
+
 				if(connection == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 					close(server_socket);
 					perror("accept");
 					exit(EXIT_FAILURE);
 				} else {
 					connection_setup(&state, connection);
-
 					// limit to one connection at a time
 					sockets[0].events = 0;
 					sockets[2].fd = connection;
@@ -410,9 +421,9 @@ int main(int argc, char ** argv) {
 				dht_handle_socket();
 			} else {
 				assert(s == state.sock);
-
 				// Call the 'handle_connection' function to process the incoming data on the socket.
 				bool cont = handle_connection(&state);
+
 				if(!cont) { // get ready for a new connection
 					sockets[0].events = POLLIN;
 					sockets[2].fd = -1;
