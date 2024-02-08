@@ -8,27 +8,24 @@
 #define HTTP_MAX_SIZE 8192
 #define HTTP_MAX_HEADERS 40
 
-
 /**
  * Simple string tuple representing a HTTP header
  */
 struct header {
-    string key;
-    string value;
+	string key;
+	string value;
 };
-
 
 /**
  * Representation of a HTTP request
  */
 struct request {
-    string method;
-    string uri;
-    struct header headers[HTTP_MAX_HEADERS];
-    char* payload;
-    ssize_t payload_length;
+	string method;
+	string uri;
+	struct header headers[HTTP_MAX_HEADERS];
+	char * payload;
+	ssize_t payload_length;
 };
-
 
 /**
  * The state of an ongoing HTTP connection
@@ -40,10 +37,10 @@ struct request {
  *                    memory of `buffer`.
  */
 struct connection_state {
-    int sock;
-    char buffer[HTTP_MAX_SIZE];
-    char* end;
-    struct request current_request;
+	int sock;
+	char buffer[HTTP_MAX_SIZE];
+	char * end;
+	struct request current_request;
 };
 
 /**
@@ -54,9 +51,9 @@ struct connection_state {
  * read is returned. Otherwise, `buffer` remains unchanged, and zero is
  * returned.
  */
-ssize_t parse_request(char* buffer, size_t n, struct request* request);
+ssize_t parse_request(char * buffer, size_t n, struct request * request);
 
 /**
  * Get value of header in request if set, or NULL.
  */
-string get_header(const struct request* request, const string name);
+string get_header(const struct request * request, const string name);

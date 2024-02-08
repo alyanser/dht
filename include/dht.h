@@ -5,7 +5,6 @@
 
 #include "http.h"
 
-
 /**
  * Type for all of the DHT's IDs
  *
@@ -13,14 +12,13 @@
  */
 typedef uint16_t dht_id;
 
-
 /**
  * Types of messages
  */
 enum {
-    LOOKUP,
-    REPLY,
-    N_OPCODES,
+	LOOKUP,
+	REPLY,
+	N_OPCODES,
 };
 
 /**
@@ -29,9 +27,9 @@ enum {
  * A peer is specified by its ID, an IPv4 address and the port it's reachable by.
  */
 struct __attribute__((packed)) peer {
-    dht_id id;
-    struct in_addr ip;
-    uint16_t port;
+	dht_id id;
+	struct in_addr ip;
+	uint16_t port;
 };
 
 /**
@@ -50,9 +48,9 @@ struct __attribute__((packed)) peer {
  * Join: `peer` indicates the originator
  */
 struct __attribute__((packed)) dht_message {
-    uint8_t flags;
-    dht_id hash;
-    struct peer peer;
+	uint8_t flags;
+	dht_id hash;
+	struct peer peer;
 };
 
 /**
@@ -92,12 +90,12 @@ dht_id hash(const string str);
  * The returned pointer may be NULL. In this case, we don't have sufficient
  * information to determine the responsible peer and a lookup is required.
  */
-struct peer* dht_responsible(dht_id id); 
+struct peer * dht_responsible(dht_id id);
 
 /**
  * Derive an address for message transmission from a peer
  */
-void peer_to_sockaddr(const struct peer* peer, struct sockaddr_in* addr);
+void peer_to_sockaddr(const struct peer * peer, struct sockaddr_in * addr);
 
 /**
  * Send a lookup message for the given ID
