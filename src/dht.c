@@ -70,7 +70,7 @@ static bool outdated(unsigned long entry) {
 /**
  *  Compare two peers for equality
  */
-static bool peer_cmp(const struct peer * a, const struct peer * b) {
+bool peer_cmp(const struct peer * a, const struct peer * b) {
 	return a && b && (memcmp(a, b, sizeof(struct peer)) == 0);
 }
 
@@ -132,6 +132,10 @@ static void process_join(struct dht_message * join) {
 
 	dht_send(&reply, &join->peer);
 	predecessor = join->peer;
+
+	if(peer_cmp(&successor, &self)) {
+		successor = predecessor;
+	}
 }
 
 static void process_notify(struct dht_message * notify) {
@@ -139,13 +143,25 @@ static void process_notify(struct dht_message * notify) {
 
 	if(!joined_dht) {
 		successor = notify->peer;
+
+		if(peer_cmp(&predecessor, &self)) {
+			predecessor = successor;
+		}
+
 		joined_dht = true;
 		return;
 	}
 
 	// reply to stabilize
 	if(!peer_cmp(&self, &notify->peer)) {
-		successor = self;
+
+		struct dht_message reply = {
+			.flags = STABILIZE,
+			.hash = self.id,
+			.peer = predecessor
+		};
+
+		dht_send(&reply, &notify->peer);
 	}
 }
 
@@ -243,7 +259,12 @@ static bool is_responsible(dht_id peer_predecessor, dht_id peer, dht_id id) {
 	// Gotta store differences explicitly as unsigned since C promotes them to signed otherwise...
 	const dht_id distance_peer_predecessor = peer_predecessor - id;
 	const dht_id distance_peer = peer - id;
-	return (peer_predecessor == peer) || (distance_peer <= distance_peer_predecessor);
+
+	if(peer_predecessor == 18648) {
+		return false;
+	}
+
+	return (peer_predecessor == peer) || (distance_peer < distance_peer_predecessor);
 }
 
 dht_id hash(const string str) {
@@ -254,10 +275,12 @@ dht_id hash(const string str) {
 
 struct peer * dht_responsible(dht_id id) {
 
+	if(is_responsible(self.id, successor.id, id)) {
+		return &successor;
+	}
+
 	if(is_responsible(predecessor.id, self.id, id)) {
 		return &self;
-	} else if(is_responsible(self.id, successor.id, id)) {
-		return &successor;
 	}
 
 	// Check for recent lookup replies that match the datum

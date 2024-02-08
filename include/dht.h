@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 
 #include "http.h"
 
@@ -115,3 +116,5 @@ void dht_handle_socket(void);
 void dht_send(struct dht_message * msg, const struct peer * peer);
 
 void * send_stabilize(void * arg);
+
+bool peer_cmp(const struct peer * a, const struct peer * b);

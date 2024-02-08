@@ -46,7 +46,7 @@ void send_reply(int conn, struct request * request) {
 		dht_lookup(uri_hash);
 		reply = "HTTP/1.1 503 Service Unavailable\r\nRetry-After: 1\r\nContent-Length: 0\r\n\r\n";
 		offset = strlen(reply);
-	} else if(responsible_peer != &self) {
+	} else if(!peer_cmp(responsible_peer, &self)) {
 		// If the responsible peer for the resource is not the current server (self), redirect the client to the responsible peer.
 
 		// Calculate the IP address and port of the responsible peer.
@@ -57,7 +57,6 @@ void send_reply(int conn, struct request * request) {
 		offset += strlen(reply + offset);
 
 		offset += sprintf(reply + offset, ":%hu%s\r\nContent-Length: 0\r\n\r\n", responsible_peer->port, request->uri);
-		puts("sending redirect");
 	} else if(strcmp(request->method, "GET") == 0) {
 
 		// Find the resource with the given URI in the 'resources' array.
@@ -69,7 +68,6 @@ void send_reply(int conn, struct request * request) {
 			memcpy(reply + payload_offset, resource, resource_length);
 			offset = payload_offset + resource_length;
 		} else {
-			puts("here sending 404");
 			reply = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
 			offset = strlen(reply);
 		}
