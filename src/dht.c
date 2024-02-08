@@ -130,12 +130,11 @@ static void process_join(struct dht_message * join) {
 		.peer = self,
 	};
 
-	dht_send(&reply, &join->peer);
 	predecessor = join->peer;
+	dht_send(&reply, &join->peer);
 }
 
 static void process_notify(struct dht_message * notify) {
-	printf("setting successor: %d\n", notify->peer.port);
 	successor = notify->peer;
 }
 
@@ -293,7 +292,6 @@ void * send_stabilize(void * arg) {
 		.peer = self,
 	};
 
-	puts("sending stuff here");
 	dht_send(&msg, &successor);
 
 	sleep(1);
