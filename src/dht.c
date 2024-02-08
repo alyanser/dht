@@ -115,10 +115,10 @@ static void process_lookup(struct dht_message * lookup) {
  * If our successor is responsible for the requested ID, a reply is sent to the
  * originator. Otherwise, the message is forwarded to our successor.
  */
-static void process_join(struct dht_message * lookup) {
+static void process_join(struct dht_message * join) {
 
-	if(!peer_cmp(&successor, dht_responsible(lookup->hash))) {
-		dht_send(lookup, &successor);
+	if(!peer_cmp(&successor, dht_responsible(join->hash))) {
+		dht_send(join, &successor);
 		return;
 	}
 
@@ -128,7 +128,12 @@ static void process_join(struct dht_message * lookup) {
 	    .peer = successor,
 	};
 
-	dht_send(&reply, &(lookup->peer));
+	dht_send(&reply, &(join->peer));
+	predecessor = join->peer;
+}
+
+static void process_notify(struct dht_message * notify) {
+	successor = notify->peer;
 }
 
 /**
@@ -171,12 +176,15 @@ static void process_reply(const struct dht_message * reply) {
  * Process an incoming DHT message
  */
 static void dht_process_message(struct dht_message * msg) {
+
 	if(msg->flags == LOOKUP) {
 		process_lookup(msg);
 	} else if(msg->flags == REPLY) {
 		process_reply(msg);
 	} else if(msg->flags == JOIN) {
 		process_join(msg);
+	} else if(msg->flags == NOTIFY) {
+		process_notify(msg);
 	} else {
 		printf("Received invalid DHT Message\n");
 	}
