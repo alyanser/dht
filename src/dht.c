@@ -119,7 +119,7 @@ static void process_lookup(struct dht_message * lookup) {
  */
 static void process_join(struct dht_message * join) {
 
-	if(!peer_cmp(&successor, dht_responsible(join->hash))) {
+	if(!peer_cmp(&self, dht_responsible(join->peer.id))) {
 		dht_send(join, &successor);
 		return;
 	}
@@ -127,15 +127,26 @@ static void process_join(struct dht_message * join) {
 	struct dht_message reply = {
 		.flags = NOTIFY,
 		.hash = 0,
-		.peer = self,
+		.peer = self
 	};
 
-	predecessor = join->peer;
 	dht_send(&reply, &join->peer);
+	predecessor = join->peer;
 }
 
 static void process_notify(struct dht_message * notify) {
-	successor = notify->peer;
+	static bool joined_dht = false;
+
+	if(!joined_dht) {
+		successor = notify->peer;
+		joined_dht = true;
+		return;
+	}
+
+	// reply to stabilize
+	if(!peer_cmp(&self, &notify->peer)) {
+		successor = self;
+	}
 }
 
 static void process_stabilize(struct dht_message * stabilize) {
@@ -198,7 +209,6 @@ static void dht_process_message(struct dht_message * msg) {
 	} else if(msg->flags == JOIN) {
 		process_join(msg);
 	} else if(msg->flags == NOTIFY) {
-		puts("got notify");
 		process_notify(msg);
 	} else if(msg->flags == STABILIZE) {
 		process_stabilize(msg);
@@ -243,6 +253,7 @@ dht_id hash(const string str) {
 }
 
 struct peer * dht_responsible(dht_id id) {
+
 	if(is_responsible(predecessor.id, self.id, id)) {
 		return &self;
 	} else if(is_responsible(self.id, successor.id, id)) {
@@ -281,7 +292,6 @@ void dht_lookup(dht_id id) {
 void * send_stabilize(void * arg) {
 
 	if(peer_cmp(&self, &successor)) {
-		printf("%d -- %d\n", self.port, successor.port);
 		sleep(1);
 		return send_stabilize(arg);
 	}
