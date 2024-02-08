@@ -75,7 +75,7 @@ static bool peer_cmp(const struct peer * a, const struct peer * b) {
 /**
  * Send the given DHT message to the given peer
  */
-static void dht_send(struct dht_message * msg, const struct peer * peer) {
+void dht_send(struct dht_message * msg, const struct peer * peer) {
 	dht_serialize(msg);
 
 	struct sockaddr_in addr;

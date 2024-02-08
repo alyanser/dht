@@ -110,6 +110,7 @@ void send_reply(int conn, struct request * request) {
  */
 size_t process_packet(int conn, char * buffer, size_t n) {
 	struct request request = {.method = NULL, .uri = NULL, .payload = NULL, .payload_length = -1};
+
 	ssize_t bytes_processed = parse_request(buffer, n, &request);
 
 	if(bytes_processed > 0) {
@@ -197,6 +198,7 @@ bool handle_connection(struct connection_state * state) {
 	while((bytes_processed = process_packet(state->sock, window_start, window_end - window_start)) > 0) {
 		window_start += bytes_processed;
 	}
+
 	if(bytes_processed == -1) {
 		return false;
 	}
@@ -344,7 +346,9 @@ static struct peer peer_from_args(const string id, const string ip, const string
 int main(int argc, char ** argv) {
 
 	if(argc != 3 && argc != 4 && argc != 6) {
-		fprintf(stderr, "Usage: %s [self.ip] [self.port] [self.id]* [anchor.ip]* [anchor.port]*\n", argv[0]);
+		fprintf(stderr, "Usage:\n\t%s [self.ip] [self.port]\n", argv[0]);
+		fprintf(stderr, "\t%s [self.ip] [self.port] [self.id]\n", argv[0]);
+		fprintf(stderr, "\t%s [self.ip] [self.port] [self.id] [anchor.ip] [anchor.port]\n\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
@@ -372,6 +376,19 @@ int main(int argc, char ** argv) {
 		// If neither static mode nor join mode, set predecessor and successor to self.
 		predecessor = self;
 		successor = self;
+	}
+
+	// if anchor is specified, send a JOIN DHT message to it
+	if(argc == 6) {
+		struct peer anchor = peer_from_args("anchor", argv[4], argv[5]);
+
+		struct dht_message msg = {
+			.flags = JOIN,
+			.hash = 0,
+			.peer = self
+		};
+
+		dht_send(&msg, &anchor);
 	}
 
 	// Create an array of pollfd structures to monitor sockets.
@@ -418,6 +435,7 @@ int main(int argc, char ** argv) {
 				}
 			} else if(s == dht_socket) {
 				// If the event is on the dht_socket, handle the DHT-related socket event.
+				puts("DHT guy here");
 				dht_handle_socket();
 			} else {
 				assert(s == state.sock);

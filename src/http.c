@@ -75,8 +75,10 @@ ssize_t parse_request(char * buffer, size_t n, struct request * request) {
 	if(!(line_end = memstr(pos, end - pos, line_separator))) {
 		return 0; // Request line not received yet
 	}
+
 	struct non_string method = {0};
 	struct non_string uri = {0};
+
 	if(!parse_request_line(pos, line_end - pos, &method, &uri)) {
 		return -1; // Error parsing request line
 	}
