@@ -435,7 +435,6 @@ int main(int argc, char ** argv) {
 				}
 			} else if(s == dht_socket) {
 				// If the event is on the dht_socket, handle the DHT-related socket event.
-				puts("DHT guy here");
 				dht_handle_socket();
 			} else {
 				assert(s == state.sock);
