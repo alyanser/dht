@@ -243,7 +243,7 @@ static bool is_responsible(dht_id peer_predecessor, dht_id peer, dht_id id) {
 	// Gotta store differences explicitly as unsigned since C promotes them to signed otherwise...
 	const dht_id distance_peer_predecessor = peer_predecessor - id;
 	const dht_id distance_peer = peer - id;
-	return (peer_predecessor == peer) || (distance_peer < distance_peer_predecessor);
+	return (peer_predecessor == peer) || (distance_peer <= distance_peer_predecessor);
 }
 
 dht_id hash(const string str) {

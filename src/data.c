@@ -1,6 +1,7 @@
 #include "data.h"
 
 #include <string.h>
+#include <stdio.h>
 
 struct tuple * find(string key, struct tuple * tuples, size_t n_tuples) {
 	for(size_t i = 0; i < n_tuples; i += 1) {
@@ -28,7 +29,7 @@ bool set(const string key, char * value, size_t value_length, struct tuple * tup
 
 	if(tuple) { // overwrite existing value
 		free(tuple->value);
-		tuple->value = (char *)malloc(value_length * sizeof(char));
+		tuple->value = (char *)malloc(value_length * sizeof(char) + 1);
 		strcpy(tuple->value, value);
 		tuple->value_length = value_length;
 		return true;

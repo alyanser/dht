@@ -36,10 +36,12 @@ void send_reply(int conn, struct request * request) {
 	size_t offset = 0;
 
 	dht_id uri_hash = hash(request->uri);
+
 	fprintf(stderr, "%hu: Handling %s request for %s (hash %hu, %lu byte payload)\n", self.id, request->method, request->uri, uri_hash, request->payload_length);
 
 	// Check if the responsible peer for the requested resource is available.
 	const struct peer * responsible_peer = dht_responsible(uri_hash);
+
 	if(responsible_peer == NULL) {
 		dht_lookup(uri_hash);
 		reply = "HTTP/1.1 503 Service Unavailable\r\nRetry-After: 1\r\nContent-Length: 0\r\n\r\n";
@@ -55,6 +57,7 @@ void send_reply(int conn, struct request * request) {
 		offset += strlen(reply + offset);
 
 		offset += sprintf(reply + offset, ":%hu%s\r\nContent-Length: 0\r\n\r\n", responsible_peer->port, request->uri);
+		puts("sending redirect");
 	} else if(strcmp(request->method, "GET") == 0) {
 
 		// Find the resource with the given URI in the 'resources' array.
@@ -66,6 +69,7 @@ void send_reply(int conn, struct request * request) {
 			memcpy(reply + payload_offset, resource, resource_length);
 			offset = payload_offset + resource_length;
 		} else {
+			puts("here sending 404");
 			reply = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
 			offset = strlen(reply);
 		}
